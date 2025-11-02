@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discord VC Live</title>
+  <style>
+    body {
+      background-color: #23272A;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #7289DA;
+      margin-bottom: 10px;
+    }
+    #vc-users {
+      margin-top: 20px;
+      font-size: 1.1em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Discord VC Live</h1>
+  <p>Currently in voice chat:</p>
+  <div id="vc-users">Loading...</div>
+
+  <script>
+    async function fetchVC() {
+      try {
+        const res = await fetch("http://localhost:3000/api/voice");
+        const data = await res.json();
+        const users = Object.values(data).flat();
+        document.getElementById("vc-users").innerText =
+          users.length ? users.join(", ") : "No one is in VC right now.";
+      } catch (e) {
+        document.getElementById("vc-users").innerText = "Error: Failed to fetch API.";
+      }
+    }
+    fetchVC();
+    setInterval(fetchVC, 5000);
+  </script>
+</body>
+</html>
