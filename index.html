@@ -1,72 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discord VC Live</title>
-  <style>
-    body {
-      background-color: #23272A;
-      color: #FFFFFF;
-      font-family: 'Space Grotesk', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      padding: 40px;
-    }
-
-    h1 {
-      color: #7289DA;
-      margin-bottom: 10px;
-    }
-
-    #vc-users {
-      margin-top: 20px;
-      font-size: 1.2em;
-      text-align: center;
-      min-height: 50px;
-    }
-
-    .user {
-      background-color: #2C2F33;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 8px;
-      display: inline-block;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord VC Live</title>
+<style>
+  body { background:#23272A; color:#fff; font-family:'Space Grotesk',sans-serif; padding:40px; }
+  h1 { color:#7289DA; margin-bottom:10px; }
+  #vc-users { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+  .user { background:#2C2F33; border-radius:12px; padding:10px; display:flex; align-items:center; gap:10px; min-width:180px; animation:fadeIn 0.5s; }
+  .user img { border-radius:50%; width:40px; height:40px; }
+  #leaderboard { margin-top:40px; width:100%; max-width:400px; }
+  #leaderboard h2 { color:#99AAB5; }
+  #leaderboard li { background:#2C2F33; margin:5px 0; padding:8px; border-radius:8px; list-style:none; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-10px);} to{opacity:1;transform:translateY(0);} }
+</style>
 </head>
 <body>
-  <h1>Discord VC Live</h1>
-  <p>Currently in voice chat:</p>
-  <div id="vc-users">Loading...</div>
+<h1>Discord VC Live</h1>
+<div id="vc-users">Loading...</div>
 
-  <script>
-    // Replace this URL with your Render/online API URL
-    const API_URL = "https://your-bot-api.onrender.com/api/voice";
+<div id="leaderboard">
+  <h2>Leaderboard (Total VC Time)</h2>
+  <ul id="lb-list">Loading...</ul>
+</div>
 
-    async function fetchVC() {
-      const container = document.getElementById("vc-users");
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        const users = Object.values(data).flat();
+<script>
+const API_URL = "https://YOUR_BOT_API_URL_HERE/api/voice";
 
-        if(users.length === 0){
-          container.innerHTML = "No one is in VC right now.";
-        } else {
-          container.innerHTML = users.map(u => `<div class="user">${u}</div>`).join('');
-        }
-      } catch(e) {
-        container.innerHTML = "Error: Failed to fetch API.";
-        console.error(e);
-      }
+async function fetchVC() {
+  const container = document.getElementById("vc-users");
+  const lbList = document.getElementById("lb-list");
+
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    const users = Object.values(data).flat();
+
+    // Live VC users
+    if(users.length === 0){
+      container.innerHTML = "No one is in VC right now.";
+    } else {
+      container.innerHTML = users.map(u=>{
+        const seconds = Math.floor((Date.now()-u.joinedAt)/1000);
+        const minutes = Math.floor(seconds/60);
+        const displayTime = `${minutes}m ${seconds%60}s`;
+        return `<div class="user">
+                  <img src="${u.avatar}" alt="${u.name}"/>
+                  <div><strong>${u.name}</strong><br/><small>${displayTime}</small></div>
+                </div>`;
+      }).join('');
     }
 
-    fetchVC();
-    setInterval(fetchVC, 5000); // refresh every 5 seconds
-  </script>
+    // Leaderboard (total time)
+    const leaderboard = users
+      .map(u => ({name:u.name, total:u.totalTime + (Date.now()-u.joinedAt)}))
+      .sort((a,b)=>b.total-a.total);
+
+    lbList.innerHTML = leaderboard.length === 0 
+      ? "<li>No users yet</li>"
+      : leaderboard.map(u=>{
+          const seconds = Math.floor(u.total/1000);
+          const minutes = Math.floor(seconds/60);
+          const displayTime = `${minutes}m ${seconds%60}s`;
+          return `<li><strong>${u.name}</strong> - ${displayTime}</li>`;
+        }).join('');
+
+  } catch(e) {
+    container.innerHTML = "Error fetching API.";
+    lbList.innerHTML = "Error fetching API.";
+    console.error(e);
+  }
+}
+
+fetchVC();
+setInterval(fetchVC, 5000);
+</script>
 </body>
 </html>
